@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뚝딱! AI 발표자료 메이커</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- PptxGenJS (PPT 생성 라이브러리) -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
+    <!-- 아이콘 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f0fdf4; }
+        .slide-card { transition: all 0.2s; }
+        .slide-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #22c55e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Firebase SDK 로드 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        // ★ 선생님 안내: 깃허브에 올리실 때는 아래 firebaseConfig를 선생님의 Firebase 프로젝트 설정으로 변경해주세요!
+        const firebaseConfig = {
+            apiKey: "선생님의_FIREBASE_API_KEY",
+            authDomain: "선생님의_FIREBASE_AUTH_DOMAIN",
+            projectId: "선생님의_FIREBASE_PROJECT_ID",
+            storageBucket: "선생님의_FIREBASE_STORAGE_BUCKET",
+            messagingSenderId: "선생님의_FIREBASE_MESSAGING_SENDER_ID",
+            appId: "선생님의_FIREBASE_APP_ID"
+        };
+
+        // 초기화 (임시 예외 처리: 설정이 없어도 UI 테스트가 가능하도록)
+        let auth, provider;
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            provider = new GoogleAuthProvider();
+            
+            // 로그인 상태 감지
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    document.getElementById('login-section').classList.add('hidden');
+                    document.getElementById('app-section').classList.remove('hidden');
+                    document.getElementById('user-name').textContent = `${user.displayName} 학생, 환영합니다!`;
+                } else {
+                    document.getElementById('login-section').classList.remove('hidden');
+                    document.getElementById('app-section').classList.add('hidden');
+                }
+            });
+        } catch (error) {
+            console.warn("Firebase가 아직 설정되지 않았습니다. 임시 로그인 모드로 진행합니다.");
+            // 테스트용 임시 로그인 처리
+            document.getElementById('login-btn').addEventListener('click', () => {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                document.getElementById('user-name').textContent = `공수전분교 학생, 환영합니다! (테스트 모드)`;
+            });
+        }
+
+        // 구글 로그인 함수 (window 객체에 할당하여 HTML에서 호출 가능하도록 함)
+        window.handleLogin = () => {
+            if(auth) {
+                signInWithPopup(auth, provider).catch((error) => {
+                    alert("로그인 중 오류가 발생했습니다: " + error.message);
+                });
+            }
+        };
+
+        window.handleLogout = () => {
+            if(auth) {
+                signOut(auth);
+            } else {
+                window.location.reload();
+            }
+        };
+    </script>
+
+    <!-- 1. 로그인 섹션 -->
+    <div id="login-section" class="flex-grow flex items-center justify-center">
+        <div class="bg-white p-10 rounded-2xl shadow-xl text-center max-w-md w-full mx-4 border-t-8 border-green-500">
+            <h1 class="text-3xl font-black text-green-600 mb-2">뚝딱! AI 발표자료</h1>
+            <p class="text-gray-500 mb-8 font-medium">자료를 조사하고, AI와 함께 멋진 PPT를 만들어요!</p>
+            <button id="login-btn" onclick="handleLogin()" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-700 p-4 rounded-xl font-bold hover:bg-gray-50 transition shadow-sm">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-6 h-6">
+                구글 계정으로 시작하기
+            </button>
+            <p class="text-xs text-gray-400 mt-6">상평초등학교 공수전분교장 국어교과 프로젝트</p>
+        </div>
+    </div>
+
+    <!-- 2. 메인 앱 섹션 (로그인 후 표시) -->
+    <div id="app-section" class="hidden flex-grow flex flex-col items-center py-8 px-4 w-full max-w-5xl mx-auto">
+        
+        <!-- 상단 헤더 -->
+        <div class="w-full flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-6 border border-green-100">
+            <div class="flex items-center gap-3 mb-4 md:mb-0">
+                <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                    <i data-lucide="presentation" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800">나만의 발표자료 만들기</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- API 키 입력란 추가됨 (비밀번호 형식으로 가려짐) -->
+                <input type="password" id="api-key" placeholder="Gemini API 키 붙여넣기" class="text-sm border border-gray-300 rounded-lg px-3 py-2 w-48 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-gray-50">
+                <span id="user-name" class="font-medium text-gray-600 text-sm"></span>
+                <button onclick="handleLogout()" class="text-sm text-red-500 hover:text-red-700 font-bold bg-red-50 px-3 py-1.5 rounded-lg transition">로그아웃</button>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- 좌측: 입력 폼 -->
+            <div class="lg:col-span-2 space-y-4">
+                
+                <!-- 발표 주제 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <label class="block text-lg font-bold text-gray-800 mb-2">어떤 주제로 발표하나요?</label>
+                    <input type="text" id="presentation-topic" placeholder="예) 우리 동네 양양의 자랑거리 소개하기" class="w-full border-2 border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:border-green-500 transition">
+                </div>
+
+                <!-- 슬라이드 목록 -->
+                <div id="slides-container" class="space-y-4">
+                    <!-- 슬라이드가 여기에 동적으로 추가됩니다 -->
+                </div>
+
+                <!-- 슬라이드 추가 버튼 -->
+                <button onclick="addSlide()" class="w-full border-2 border-dashed border-green-300 text-green-600 bg-green-50 hover:bg-green-100 p-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition">
+                    <i data-lucide="plus-circle"></i> 새로운 슬라이드 추가하기
+                </button>
+            </div>
+
+            <!-- 우측: AI 변환 및 다운로드 패널 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-md border-t-8 border-green-400 sticky top-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">완성하기</h3>
+                    
+                    <p class="text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        작성한 내용을 바탕으로 AI가 발표하기 좋게 문장을 다듬어 줍니다. 그 다음 진짜 파워포인트(PPT) 파일로 다운로드 하세요!
+                    </p>
+
+                    <div class="space-y-3">
+                        <button onclick="generateWithAI()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                            <i data-lucide="sparkles"></i> AI로 내용 다듬기
+                        </button>
+                        
+                        <button onclick="downloadPPT()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                            <i data-lucide="download"></i> PPT 파일 다운로드
+                        </button>
+                    </div>
+
+                    <!-- 상태 표시창 -->
+                    <div id="status-message" class="mt-4 text-center text-sm font-medium hidden">
+                        <!-- 메시지 표시 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex-col items-center justify-center text-white">
+        <div class="loader mb-4"></div>
+        <p id="loading-text" class="text-lg font-bold">AI가 아이디어를 다듬고 있어요...</p>
+    </div>
+
+    <!-- 스크립트 로직 -->
+    <script>
+        // Lucide 아이콘 초기화
+        lucide.createIcons();
+
+        // 슬라이드 데이터 상태 관리
+        let slidesData = [
+            { id: 1, title: '', content: '', type: 'text', aiRefined: null }
+        ];
+
+        // 슬라이드 렌더링 함수
+        function renderSlides() {
+            const container = document.getElementById('slides-container');
+            container.innerHTML = '';
+
+            slidesData.forEach((slide, index) => {
+                const isRefined = slide.aiRefined !== null;
+                
+                const slideHTML = `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border ${isRefined ? 'border-green-400 bg-green-50/30' : 'border-gray-200'} slide-card relative">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-green-600 flex items-center gap-2">
+                                <span class="bg-green-100 text-green-700 w-6 h-6 rounded-full flex items-center justify-center text-xs">${index + 1}</span>
+                                슬라이드
+                            </h4>
+                            ${index > 0 ? `<button onclick="removeSlide(${slide.id})" class="text-gray-400 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <input type="text" value="${slide.title}" onchange="updateSlide(${slide.id}, 'title', this.value)" placeholder="이 슬라이드의 소주제 (예: 양양 송이의 특징)" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-green-500">
+                            </div>
+                            
+                            <div>
+                                <textarea rows="3" onchange="updateSlide(${slide.id}, 'content', this.value)" placeholder="조사한 내용을 자유롭게 적어주세요. AI가 멋지게 요약해 줍니다." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-green-500 resize-none">${slide.content}</textarea>
+                            </div>
+
+                            <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <label class="text-sm font-bold text-gray-700">이 슬라이드에 어떤 자료가 들어가면 좋을까요?</label>
+                                <select onchange="
