@@ -347,28 +347,36 @@
             }
         }
 
-        // 인터넷 상의 이미지를 Base64(PPT 삽입용 데이터)로 변환하는 함수
-        async function getBase64ImageFromUrl(imageUrl) {
-            try {
-                const res = await fetch(imageUrl);
-                if (!res.ok) throw new Error('Network response was not ok');
-                const blob = await res.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            } catch (e) {
-                console.error("그림 생성 에러:", e);
-                return null;
+        // 인터넷 상의 이미지를 Base64(PPT 삽입용 데이터)로 변환하는 함수 (재시도 끈기 로직 유지)
+        async function getBase64ImageFromUrl(imageUrl, retries = 2) {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const finalUrl = imageUrl + (imageUrl.includes('?') ? "&" : "?") + "seed=" + Math.floor(Math.random() * 1000000);
+                    const res = await fetch(finalUrl);
+                    if (!res.ok) throw new Error('서버가 너무 바쁩니다!');
+                    const blob = await res.blob();
+                    
+                    if (blob.size < 1000) throw new Error('그림이 제대로 오지 않았습니다.');
+
+                    return await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (e) {
+                    console.error(`🎨 생성 실패 (재시도 ${i+1}번 째 시도 중...):`, e);
+                    if (i === retries) return null;
+                    await new Promise(r => setTimeout(r, 1500));
+                }
             }
+            return null;
         }
 
         let pendingUploadData = null;
         let pendingUploadName = null;
 
-        // 4. PPT 다운로드 & 구글 슬라이드 연동 메인 함수 (차트 및 AI 이미지 생성 포함)
+        // 4. PPT 다운로드 & 구글 슬라이드 연동 메인 함수 (차트 이미지화 해결!)
         async function downloadPPT(openGoogleSlides) {
             if (slidesData.length === 0) { showMessage("슬라이드가 하나도 없습니다. 슬라이드를 추가해주세요!", true, 3000); return; }
 
@@ -434,25 +442,41 @@
                         let doImage = hasImage && iPrompt;
 
                         if (doImage && doChart) {
-                            // 그림과 차트 둘 다 그리기 (위아래 반반씩)
                             showLoading(`🎨 슬라이드 ${i + 1}의 그림과 차트를 만들고 있어요...\n<span class="text-sm font-normal text-gray-200">(약 5~10초 정도 걸립니다!)</span>`);
+                            
+                            // 그림 만들기
                             const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(iPrompt)}?width=800&height=400&nologo=true`;
                             const base64Img = await getBase64ImageFromUrl(imageUrl);
                             if (base64Img) slide.addImage({ data: base64Img, x: mediaX, y: 1.8, w: mediaW, h: 1.4, sizing: { type: 'contain' } });
                             
-                            let dataChart = [{ name: '수치', labels: cData.labels, values: cData.values }];
-                            slide.addChart(pres.ChartType.bar, dataChart, { x: mediaX, y: 3.3, w: mediaW, h: 1.5, showTitle: true, title: cData.title, showLegend: false, barDir: 'col' });
+                            // 차트를 안전한 이미지로 만들기
+                            const chartConfig = { type: 'bar', data: { labels: cData.labels, datasets: [{ label: '데이터', data: cData.values, backgroundColor: 'rgba(59, 130, 246, 0.8)' }] }, options: { title: { display: true, text: cData.title, fontSize: 16 }, legend: { display: false }, plugins: { datalabels: { display: true, align: 'top', font: { size: 12, weight: 'bold' } } } } };
+                            const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&w=800&h=400`;
+                            const chartBase64 = await getBase64ImageFromUrl(chartUrl);
+                            
+                            if (chartBase64) slide.addImage({ data: chartBase64, x: mediaX, y: 3.3, w: mediaW, h: 1.5, sizing: { type: 'contain' } });
+                            else slide.addText("차트 생성 실패", { x: mediaX, y: 3.3, w: mediaW, h: 1.5, align: "center", color: "9CA3AF" });
                         } 
                         else if (doChart) {
-                            // 차트만 크게 그리기
-                            let dataChart = [{ name: '수치', labels: cData.labels, values: cData.values }];
-                            slide.addChart(pres.ChartType.bar, dataChart, { x: mediaX, y: 1.8, w: mediaW, h: 3, showTitle: true, title: cData.title, showLegend: false, barDir: 'col' });
+                            showLoading(`📊 슬라이드 ${i + 1}의 차트를 만들고 있어요...`);
+                            
+                            // 차트를 안전한 이미지로 만들기
+                            const chartConfig = { type: 'bar', data: { labels: cData.labels, datasets: [{ label: '데이터', data: cData.values, backgroundColor: 'rgba(59, 130, 246, 0.8)' }] }, options: { title: { display: true, text: cData.title, fontSize: 24 }, legend: { display: false }, plugins: { datalabels: { display: true, align: 'top', font: { size: 16, weight: 'bold' } } }, scales: { yAxes: [{ ticks: { beginAtZero: true, fontSize: 16 } }], xAxes: [{ ticks: { fontSize: 16 } }] } } };
+                            const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&w=800&h=600`;
+                            const chartBase64 = await getBase64ImageFromUrl(chartUrl);
+                            
+                            if (chartBase64) {
+                                slide.addImage({ data: chartBase64, x: mediaX, y: 1.8, w: mediaW, h: 3, sizing: { type: 'contain' } });
+                            } else {
+                                slide.addShape(pres.ShapeType.rect, { x: mediaX, y: 1.8, w: mediaW, h: 3, fill: { color: "F3F4F6" }, line: { color: "D1D5DB", width: 1 } });
+                                slide.addText("차트 생성 실패", { x: mediaX, y: 1.8, w: mediaW, h: 3, align: "center", color: "9CA3AF", fontSize: 16 });
+                            }
                         } 
                         else if (doImage) {
-                            // 이미지만 크게 그리기
                             showLoading(`🎨 슬라이드 ${i + 1}의 멋진 그림을 AI가 그리고 있어요...\n<span class="text-sm font-normal text-gray-200">(약 5~10초 정도 걸립니다!)</span>`);
                             const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(iPrompt)}?width=800&height=600&nologo=true`;
                             const base64Img = await getBase64ImageFromUrl(imageUrl);
+                            
                             if (base64Img) {
                                 slide.addImage({ data: base64Img, x: mediaX, y: 1.8, w: mediaW, h: 3, sizing: { type: 'contain' } });
                             } else {
@@ -461,7 +485,6 @@
                             }
                         } 
                         else {
-                            // 차트/이미지 둘 다 없을 경우 빈 네모 박스
                             let mediaText = (hasImage && hasChart) ? "사진/그림 및 표/그래프 데이터 없음" : (hasImage ? "사진/그림 생성 실패" : "비교할 수치 데이터가 없습니다");
                             slide.addShape(pres.ShapeType.rect, { x: mediaX, y: 1.8, w: mediaW, h: 3, fill: { color: "F3F4F6" }, line: { color: "D1D5DB", width: 1 } });
                             slide.addText(mediaText, { x: mediaX, y: 1.8, w: mediaW, h: 3, align: "center", color: "9CA3AF", fontSize: 16 });
