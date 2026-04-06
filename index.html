@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>뚝딱! 발표 PPT 만들기 (V5)</title>
+    <title>뚝딱! 발표 PPT 만들기 (V6 - 차트 마법 적용)</title>
     <!-- 브라우저 캐시 방지 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -192,6 +192,7 @@
             container.innerHTML = '';
             slidesData.forEach((slide, index) => {
                 const isRefined = slide.aiRefined !== null;
+                // 1번 슬라이드도 삭제 버튼이 나오도록 수정!
                 const slideHTML = `
                     <div class="bg-white p-5 rounded-2xl shadow-sm border ${isRefined ? 'border-green-400 bg-green-50/30' : 'border-gray-200'} slide-card relative">
                         <div class="flex justify-between items-center mb-3">
@@ -199,17 +200,17 @@
                                 <span class="bg-green-100 text-green-700 w-6 h-6 rounded-full flex items-center justify-center text-xs">${index + 1}</span>
                                 슬라이드
                             </h4>
-                            ${index > 0 ? `<button onclick="removeSlide(${slide.id})" class="text-gray-400 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
+                            <button onclick="removeSlide(${slide.id})" class="text-gray-400 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                         </div>
                         <div class="space-y-3">
                             <div><input type="text" value="${slide.title}" onchange="updateSlide(${slide.id}, 'title', this.value)" placeholder="이 슬라이드의 소주제 (예: 양양 송이의 특징)" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-green-500"></div>
-                            <div><textarea rows="3" onchange="updateSlide(${slide.id}, 'content', this.value)" placeholder="조사한 내용을 자유롭게 적어주세요. AI가 핵심만 아주 짧게 요약해 줍니다." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-green-500 resize-none">${slide.content}</textarea></div>
+                            <div><textarea rows="3" onchange="updateSlide(${slide.id}, 'content', this.value)" placeholder="조사한 내용을 자유롭게 적어주세요. 숫자를 넣으면 표/그래프를 만들 수 있어요!" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-green-500 resize-none">${slide.content}</textarea></div>
                             <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
                                 <label class="text-sm font-bold text-gray-700 whitespace-nowrap">어떤 자료가 들어갈까요? (중복 선택)</label>
                                 <div class="flex flex-wrap gap-4 text-sm text-gray-800">
                                     <label class="flex items-center gap-1.5 cursor-pointer hover:text-green-700"><input type="checkbox" onchange="toggleSlideType(${slide.id}, 'text')" ${slide.types.includes('text') ? 'checked' : ''} class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"><span>📝 글</span></label>
                                     <label class="flex items-center gap-1.5 cursor-pointer hover:text-green-700"><input type="checkbox" onchange="toggleSlideType(${slide.id}, 'image')" ${slide.types.includes('image') ? 'checked' : ''} class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"><span>🖼️ AI 사진/그림</span></label>
-                                    <label class="flex items-center gap-1.5 cursor-pointer hover:text-green-700"><input type="checkbox" onchange="toggleSlideType(${slide.id}, 'chart')" ${slide.types.includes('chart') ? 'checked' : ''} class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"><span>📊 표/그래프 (빈칸)</span></label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer hover:text-green-700"><input type="checkbox" onchange="toggleSlideType(${slide.id}, 'chart')" ${slide.types.includes('chart') ? 'checked' : ''} class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"><span>📊 표/그래프</span></label>
                                 </div>
                             </div>
                             ${isRefined ? `
@@ -218,10 +219,20 @@
                                 <ul class="list-disc list-inside text-sm text-gray-800 space-y-1 mb-3 font-medium">
                                     ${slide.aiRefined.bulletPoints.map(bp => `<li>${bp}</li>`).join('')}
                                 </ul>
+                                
                                 ${slide.types.includes('image') && slide.aiRefined.imagePrompt ? `
-                                <div class="flex items-center gap-2 mb-3 bg-blue-50 text-blue-700 p-2 rounded text-xs font-bold border border-blue-100">
-                                    <i data-lucide="image" class="w-4 h-4"></i> PPT를 만들 때 AI가 이 내용에 어울리는 그림을 자동으로 그려서 넣어줍니다!
+                                <div class="flex items-center gap-2 mb-2 bg-blue-50 text-blue-700 p-2 rounded text-xs font-bold border border-blue-100">
+                                    <i data-lucide="image" class="w-4 h-4"></i> PPT를 만들 때 AI가 내용에 어울리는 그림을 자동으로 생성합니다!
                                 </div>` : ''}
+
+                                ${slide.types.includes('chart') && slide.aiRefined.chartData ? `
+                                <div class="flex items-center gap-2 mb-3 bg-indigo-50 text-indigo-700 p-2 rounded text-xs font-bold border border-indigo-100">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i> PPT에 [${slide.aiRefined.chartData.title}] 차트가 자동으로 생성됩니다!
+                                </div>` : (slide.types.includes('chart') && !slide.aiRefined.chartData ? `
+                                <div class="flex items-center gap-2 mb-3 bg-gray-50 text-gray-500 p-2 rounded text-xs font-bold border border-gray-200">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i> 작성하신 내용에 비교할 수치가 없어 차트를 생성하지 못합니다.
+                                </div>` : '')}
+
                                 <h5 class="text-xs font-bold text-blue-700 mb-1">🎤 발표 대본 (스피커 노트)</h5>
                                 <p class="text-sm text-gray-700 bg-white p-2 rounded border border-blue-100">${slide.aiRefined.speakerNotes}</p>
                             </div>` : ''}
@@ -237,7 +248,10 @@
             slidesData.push({ id: newId, title: '', content: '', types: ['text'], aiRefined: null });
             renderSlides();
         }
-        function removeSlide(id) { slidesData = slidesData.filter(s => s.id !== id); renderSlides(); }
+        function removeSlide(id) { 
+            slidesData = slidesData.filter(s => s.id !== id); 
+            renderSlides(); 
+        }
         function updateSlide(id, field, value) { const slide = slidesData.find(s => s.id === id); if (slide) { slide[field] = value; slide.aiRefined = null; } }
         function toggleSlideType(id, type) { const slide = slidesData.find(s => s.id === id); if (slide) { if (slide.types.includes(type)) { slide.types = slide.types.filter(t => t !== type); } else { slide.types.push(type); } slide.aiRefined = null; } }
 
@@ -255,7 +269,7 @@
             setTimeout(() => el.classList.add('hidden'), duration);
         }
 
-        // 3. AI 변환 함수 (개조식 요약 및 이미지 프롬프트 생성)
+        // 3. AI 변환 함수 (차트 데이터 추출 추가!)
         async function generateWithAI() {
             if (KEY_PART_2 === "여기에_나머지_API키를_붙여넣으세요") { 
                 showMessage("선생님! 코드 맨 아래에 API 키의 뒷부분을 입력하지 않으셨어요!", true, 5000); 
@@ -265,18 +279,22 @@
             const topic = document.getElementById('presentation-topic').value.trim();
             if (!topic) { showMessage("발표 주제를 먼저 입력해주세요!", true, 3000); document.getElementById('presentation-topic').focus(); return; }
             
+            // 슬라이드가 모두 지워졌을 때의 예외 처리
+            if (slidesData.length === 0) { showMessage("최소 1개 이상의 슬라이드를 추가해 주세요!", true, 3000); return; }
+
             const emptySlide = slidesData.find(s => !s.title || !s.content);
             if (emptySlide) { showMessage("모든 슬라이드의 소주제와 내용을 작성해주세요!", true, 3000); return; }
 
             showLoading("AI가 초등학생 눈높이에 맞게 내용을 다듬고 있어요...");
             
             const prompt = `너는 초등학교 5학년 학생들의 국어 '자료를 조사하여 발표해요' 단원 학습을 돕는 친절한 AI 선생님이야. 
-            학생이 입력한 [발표 주제]와 [슬라이드별 메모]를 보고, 실제 PPT 슬라이드에 들어갈 '개조식 문장(bullet points)', 발표할 때 읽을 '발표 대본(speakerNotes)', 그리고 슬라이드에 어울리는 '그림 생성용 영어 프롬프트(imagePrompt)'를 만들어줘.
+            학생이 입력한 [발표 주제]와 [슬라이드별 메모]를 보고, 실제 PPT 슬라이드에 들어갈 '개조식 문장(bullet points)', 발표할 때 읽을 '발표 대본(speakerNotes)', 슬라이드에 어울리는 '그림 생성용 영어 프롬프트(imagePrompt)', 그리고 수치가 있다면 막대그래프를 그릴 '차트 데이터(chartData)'를 만들어줘.
 
             [매우 중요한 규칙]
             1. bulletPoints: PPT 화면에 들어갈 글씨이므로 반드시 '~해요', '~습니다', '~입니다' 같은 대화체 서술어를 모두 빼버려. 무조건 명사(예: ~고양이, ~특징) 또는 '~함', '~임'으로 끝나는 아주 짧고 간결한 개조식 단답형 문장으로만 2~3줄 작성해. (절대 문장형으로 길게 쓰지 말 것)
             2. speakerNotes: 초등학교 5학년이 반 친구들 앞에서 발표할 때 읽을 대본이므로, 친절한 존댓말(~했습니다, ~해요)로 자연스럽게 작성해.
             3. imagePrompt: 이 슬라이드의 내용을 잘 표현하는 수채화나 일러스트 느낌의 그림을 AI가 그릴 수 있도록 영어로 된 프롬프트를 1~2문장으로 짧게 작성해줘. (예: A cute watercolor illustration of a Korean Shorthair cat)
+            4. chartData: 학생의 메모 내용 중 크기를 비교할 수 있는 '숫자(수치, 통계 등)'가 있다면 막대 그래프용 데이터로 뽑아줘. 수치가 아예 없다면 무조건 null 로 반환해.
 
             [발표 주제]: ${topic} 
             [슬라이드별 메모]: ${JSON.stringify(slidesData.map(s => ({ id: s.id, title: s.title, content: s.content, types: s.types })))} 
@@ -287,7 +305,12 @@
                 "id": 슬라이드 아이디(숫자),
                 "bulletPoints": ["러시안 블루: 은회색 털과 에메랄드 눈", "코리안 숏헤어: 우리나라에서 가장 많이 키우는 고양이"],
                 "speakerNotes": "여러분 안녕하세요! 이 슬라이드에서는...",
-                "imagePrompt": "A cute watercolor illustration of a Russian Blue cat..."
+                "imagePrompt": "A cute watercolor illustration of a Russian Blue cat...",
+                "chartData": {
+                  "title": "가장 많이 키우는 고양이 비율",
+                  "labels": ["코리안 숏헤어", "러시안 블루", "페르시안"],
+                  "values": [50, 30, 20]
+                }
               }
             ]`;
 
@@ -309,7 +332,8 @@
                         slide.aiRefined = { 
                             bulletPoints: refined.bulletPoints, 
                             speakerNotes: refined.speakerNotes,
-                            imagePrompt: refined.imagePrompt 
+                            imagePrompt: refined.imagePrompt,
+                            chartData: refined.chartData || null
                         }; 
                     } 
                 });
@@ -341,12 +365,13 @@
             }
         }
 
-        // 다운로드 전역 변수 (업로드 시 사용)
         let pendingUploadData = null;
         let pendingUploadName = null;
 
-        // 4. PPT 다운로드 & 구글 슬라이드 연동 메인 함수 (AI 이미지 생성 포함)
+        // 4. PPT 다운로드 & 구글 슬라이드 연동 메인 함수 (차트 및 AI 이미지 생성 포함)
         async function downloadPPT(openGoogleSlides) {
+            if (slidesData.length === 0) { showMessage("슬라이드가 하나도 없습니다. 슬라이드를 추가해주세요!", true, 3000); return; }
+
             const topic = document.getElementById('presentation-topic').value.trim();
             if (!topic) { showMessage("발표 주제를 먼저 입력해주세요!", true, 3000); return; }
 
@@ -371,7 +396,6 @@
                 titleSlide.addText(topic, { x: 1, y: 2, w: 8, h: 1.5, fontSize: 44, bold: true, color: "1F2937", align: "center" });
                 titleSlide.addText(`발표자: 5학년`, { x: 1, y: 3.5, w: 8, h: 1, fontSize: 24, color: "4B5563", align: "center" });
 
-                // 각 슬라이드 순회 처리 (이미지 생성 대기 때문에 for...of 사용)
                 for (let i = 0; i < slidesData.length; i++) {
                     const slideData = slidesData[i];
                     let slide = pres.addSlide({ masterName: "MASTER_SLIDE" });
@@ -402,14 +426,33 @@
                         let mediaX = hasText ? 5.5 : 2.5;
                         let mediaW = hasText ? 4 : 5;
                         
-                        // ★ 마법의 AI 그림 생성 및 삽입 파트 ★
-                        if (hasImage && slideData.aiRefined && slideData.aiRefined.imagePrompt) {
-                            showLoading(`🎨 슬라이드 ${i + 1}의 멋진 그림을 AI가 그리고 있어요...\n<span class="text-sm font-normal text-gray-200">(약 5~10초 정도 걸립니다. 잠시만 기다려주세요!)</span>`);
-                            
-                            // Pollinations 무료 이미지 생성 AI API 사용 (로그인 불필요, 즉시 생성)
-                            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(slideData.aiRefined.imagePrompt)}?width=800&height=600&nologo=true`;
+                        let cData = slideData.aiRefined?.chartData;
+                        let iPrompt = slideData.aiRefined?.imagePrompt;
+                        
+                        // 그릴 수 있는 차트와 이미지가 있는지 판별
+                        let doChart = hasChart && cData && cData.labels && cData.values && cData.labels.length > 0;
+                        let doImage = hasImage && iPrompt;
+
+                        if (doImage && doChart) {
+                            // 그림과 차트 둘 다 그리기 (위아래 반반씩)
+                            showLoading(`🎨 슬라이드 ${i + 1}의 그림과 차트를 만들고 있어요...\n<span class="text-sm font-normal text-gray-200">(약 5~10초 정도 걸립니다!)</span>`);
+                            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(iPrompt)}?width=800&height=400&nologo=true`;
                             const base64Img = await getBase64ImageFromUrl(imageUrl);
+                            if (base64Img) slide.addImage({ data: base64Img, x: mediaX, y: 1.8, w: mediaW, h: 1.4, sizing: { type: 'contain' } });
                             
+                            let dataChart = [{ name: '수치', labels: cData.labels, values: cData.values }];
+                            slide.addChart(pres.ChartType.bar, dataChart, { x: mediaX, y: 3.3, w: mediaW, h: 1.5, showTitle: true, title: cData.title, showLegend: false, barDir: 'col' });
+                        } 
+                        else if (doChart) {
+                            // 차트만 크게 그리기
+                            let dataChart = [{ name: '수치', labels: cData.labels, values: cData.values }];
+                            slide.addChart(pres.ChartType.bar, dataChart, { x: mediaX, y: 1.8, w: mediaW, h: 3, showTitle: true, title: cData.title, showLegend: false, barDir: 'col' });
+                        } 
+                        else if (doImage) {
+                            // 이미지만 크게 그리기
+                            showLoading(`🎨 슬라이드 ${i + 1}의 멋진 그림을 AI가 그리고 있어요...\n<span class="text-sm font-normal text-gray-200">(약 5~10초 정도 걸립니다!)</span>`);
+                            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(iPrompt)}?width=800&height=600&nologo=true`;
+                            const base64Img = await getBase64ImageFromUrl(imageUrl);
                             if (base64Img) {
                                 slide.addImage({ data: base64Img, x: mediaX, y: 1.8, w: mediaW, h: 3, sizing: { type: 'contain' } });
                             } else {
@@ -417,9 +460,9 @@
                                 slide.addText("그림 생성 실패", { x: mediaX, y: 1.8, w: mediaW, h: 3, align: "center", color: "9CA3AF", fontSize: 16 });
                             }
                         } 
-                        // 그림 생성이 아닐 경우(표/그래프) 원래대로 네모 박스 표시
                         else {
-                            let mediaText = (hasImage && hasChart) ? "사진/그림 및 표/그래프 삽입 공간" : (hasImage ? "사진/그림 삽입 공간" : "표/그래프 삽입 공간");
+                            // 차트/이미지 둘 다 없을 경우 빈 네모 박스
+                            let mediaText = (hasImage && hasChart) ? "사진/그림 및 표/그래프 데이터 없음" : (hasImage ? "사진/그림 생성 실패" : "비교할 수치 데이터가 없습니다");
                             slide.addShape(pres.ShapeType.rect, { x: mediaX, y: 1.8, w: mediaW, h: 3, fill: { color: "F3F4F6" }, line: { color: "D1D5DB", width: 1 } });
                             slide.addText(mediaText, { x: mediaX, y: 1.8, w: mediaW, h: 3, align: "center", color: "9CA3AF", fontSize: 16 });
                         }
