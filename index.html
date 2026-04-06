@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>뚝딱! AI 발표자료 메이커</title>
+    <title>뚝딱! 발표 PPT 만들기</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 폰트 -->
@@ -29,14 +29,19 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-gray-800 min-h-screen flex flex-col">
+<body class="text-gray-800 min-h-screen flex flex-col relative">
+
+    <!-- 오른쪽 아래 제작자 표시 -->
+    <div class="fixed bottom-4 right-6 text-gray-400 text-sm font-bold z-10 drop-shadow-sm">
+        제작자: 석현샘
+    </div>
 
     <!-- Firebase SDK 로드 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // 선생님의 실제 Firebase 프로젝트 설정 반영 완료
+        // 선생님의 실제 Firebase 프로젝트 설정
         const firebaseConfig = {
             apiKey: "AIzaSyAVzj49_O4mVmrADzMcK7itRT-iBJ30gaw",
             authDomain: "presentaion-43d7d.firebaseapp.com",
@@ -46,7 +51,7 @@
             appId: "1:581142096722:web:6df52fbb78957b001be88b"
         };
 
-        // 초기화 (임시 예외 처리: 설정이 없어도 UI 테스트가 가능하도록)
+        // 초기화
         let auth, provider;
         try {
             const app = initializeApp(firebaseConfig);
@@ -58,7 +63,7 @@
                 if (user) {
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('app-section').classList.remove('hidden');
-                    document.getElementById('user-name').textContent = `${user.displayName} 학생, 환영합니다!`;
+                    document.getElementById('user-name').textContent = `${user.displayName}님, 환영합니다!`;
                 } else {
                     document.getElementById('login-section').classList.remove('hidden');
                     document.getElementById('app-section').classList.add('hidden');
@@ -70,15 +75,15 @@
             document.getElementById('login-btn').addEventListener('click', () => {
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('app-section').classList.remove('hidden');
-                document.getElementById('user-name').textContent = `공수전분교 학생, 환영합니다! (테스트 모드)`;
+                document.getElementById('user-name').textContent = `환영합니다! (테스트 모드)`;
             });
         }
 
-        // 구글 로그인 함수 (window 객체에 할당하여 HTML에서 호출 가능하도록 함)
+        // 구글 로그인 함수
         window.handleLogin = () => {
             if(auth) {
                 signInWithPopup(auth, provider).catch((error) => {
-                    alert("로그인 중 오류가 발생했습니다: " + error.message);
+                    showMessage("로그인 중 오류가 발생했습니다.", true);
                 });
             }
         };
@@ -93,20 +98,19 @@
     </script>
 
     <!-- 1. 로그인 섹션 -->
-    <div id="login-section" class="flex-grow flex items-center justify-center">
-        <div class="bg-white p-10 rounded-2xl shadow-xl text-center max-w-md w-full mx-4 border-t-8 border-green-500">
-            <h1 class="text-3xl font-black text-green-600 mb-2">뚝딱! AI 발표자료</h1>
-            <p class="text-gray-500 mb-8 font-medium">자료를 조사하고, AI와 함께 멋진 PPT를 만들어요!</p>
+    <div id="login-section" class="flex-grow flex items-center justify-center relative z-20">
+        <div class="bg-white p-10 rounded-2xl shadow-xl text-center max-w-lg w-full mx-4 border-t-8 border-green-500">
+            <h1 class="text-2xl sm:text-3xl font-black text-green-600 mb-4 leading-snug">뚝딱! 조사한 자료로<br>발표 PPT 만들기</h1>
+            <p class="text-gray-500 mb-8 font-medium break-keep">발표내용을 구상하고 자료내용을 알려주시면,<br>PPT는 제가 만들어 드릴게요.</p>
             <button id="login-btn" onclick="handleLogin()" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-700 p-4 rounded-xl font-bold hover:bg-gray-50 transition shadow-sm">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-6 h-6">
                 구글 계정으로 시작하기
             </button>
-            <p class="text-xs text-gray-400 mt-6">상평초등학교 공수전분교장 국어교과 프로젝트</p>
         </div>
     </div>
 
     <!-- 2. 메인 앱 섹션 (로그인 후 표시) -->
-    <div id="app-section" class="hidden flex-grow flex flex-col items-center py-8 px-4 w-full max-w-5xl mx-auto">
+    <div id="app-section" class="hidden flex-grow flex flex-col items-center py-8 px-4 w-full max-w-5xl mx-auto relative z-20">
         
         <!-- 상단 헤더 -->
         <div class="w-full flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-6 border border-green-100">
@@ -123,7 +127,7 @@
         </div>
 
         <!-- 메인 콘텐츠 영역 -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
             
             <!-- 좌측: 입력 폼 -->
             <div class="lg:col-span-2 space-y-4">
@@ -164,7 +168,7 @@
                         </button>
                     </div>
 
-                    <!-- 상태 표시창 -->
+                    <!-- 상태 표시창 (알림창 대체) -->
                     <div id="status-message" class="mt-4 text-center text-sm font-medium hidden">
                         <!-- 메시지 표시 -->
                     </div>
@@ -181,8 +185,8 @@
 
     <!-- 스크립트 로직 -->
     <script>
-        // ★ 선생님의 Gemini API 키를 아래 따옴표 안에 넣어주세요! ★
-        const GEMINI_API_KEY = "선생님의_API_키를_여기에_붙여넣으세요";
+        // ★ 중요: 이곳에는 Firebase 키가 아닌, Google AI Studio에서 발급받은 Gemini API 키를 넣으셔야 합니다! ★
+        const GEMINI_API_KEY = "AIzaSyAcrwDM4d_z_FdMVdkJMiAZE6ot1LkB3nY";
 
         // Lucide 아이콘 초기화
         lucide.createIcons();
@@ -299,11 +303,13 @@
             document.getElementById('loading-overlay').classList.remove('flex');
         }
 
+        // 화면에 알림창 대신 메시지를 표시하는 함수 (버그 수정의 핵심!)
         function showMessage(msg, isError = false) {
             const el = document.getElementById('status-message');
             el.textContent = msg;
             el.className = `mt-4 text-center text-sm font-bold p-3 rounded-lg ${isError ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`;
             el.classList.remove('hidden');
+            // 5초 후 메시지 숨김
             setTimeout(() => el.classList.add('hidden'), 5000);
         }
 
@@ -311,22 +317,23 @@
         async function generateWithAI() {
             const topic = document.getElementById('presentation-topic').value.trim();
 
-            // 직접 입력된 API 키 확인
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyAsi0CaebSPjQMe7FCm0vHGVbVV3ApVxLI") {
-                alert("코드 안에 Gemini API 키가 입력되지 않았습니다. 코드를 확인해주세요!");
+            // 1. API 키 확인
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "선생님의_API_키를_여기에_붙여넣으세요") {
+                showMessage("오류: 코드 안에 Gemini API 키가 없습니다!", true);
                 return;
             }
 
+            // 2. 주제 확인
             if (!topic) {
-                alert("발표 주제를 입력해주세요!");
+                showMessage("발표 주제를 먼저 입력해주세요!", true);
                 document.getElementById('presentation-topic').focus();
                 return;
             }
 
-            // 빈 슬라이드 검사
+            // 3. 빈 슬라이드 검사
             const emptySlide = slidesData.find(s => !s.title || !s.content);
             if (emptySlide) {
-                alert("모든 슬라이드의 소주제와 조사한 내용을 조금이라도 적어주세요!");
+                showMessage("모든 슬라이드의 소주제와 내용을 작성해주세요!", true);
                 return;
             }
 
@@ -341,7 +348,7 @@
             [슬라이드별 메모]:
             ${JSON.stringify(slidesData.map(s => ({ id: s.id, title: s.title, content: s.content, types: s.types })))}
 
-            반드시 아래의 JSON 배열 형식으로만 응답해. 코드 블록(\`\`\`json) 없이 순수 JSON 텍스트만 출력해.
+            반드시 아래의 JSON 배열 형식으로만 응답해.
             [
               {
                 "id": 슬라이드 아이디(숫자),
@@ -361,14 +368,19 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("API 요청 실패");
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || "API 인증 오류(키가 잘못되었을 수 있습니다.)");
+                }
 
                 const data = await response.json();
                 let resultText = data.candidates[0].content.parts[0].text;
                 
-                // JSON 파싱 보정
-                resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
-                const refinedData = JSON.parse(resultText);
+                // JSON 파싱 (AI가 불필요한 말을 붙여도 JSON만 찾아내도록 강화)
+                const jsonMatch = resultText.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) throw new Error("AI가 올바른 형식으로 답변하지 않았습니다.");
+                
+                const refinedData = JSON.parse(jsonMatch[0]);
 
                 // 상태 업데이트
                 refinedData.forEach(refined => {
@@ -386,7 +398,8 @@
 
             } catch (error) {
                 console.error(error);
-                showMessage("AI 변환 중 오류가 발생했습니다. 네트워크나 API 키를 확인해주세요.", true);
+                // 에러의 원인을 정확히 출력합니다. (예: API키 오류인지, 파싱 오류인지)
+                showMessage(`AI 오류: ${error.message}`, true);
             } finally {
                 hideLoading();
             }
@@ -396,15 +409,15 @@
         async function downloadPPT() {
             const topic = document.getElementById('presentation-topic').value.trim();
             if (!topic) {
-                alert("발표 주제를 먼저 입력해주세요!");
+                showMessage("발표 주제를 먼저 입력해주세요!", true);
                 return;
             }
 
             // AI 정제가 안 된 슬라이드가 있는지 확인
             const needsAI = slidesData.some(s => s.aiRefined === null);
             if (needsAI) {
-                const confirmProceed = confirm("AI로 내용을 다듬지 않은 슬라이드가 있습니다. 이대로 PPT를 만들까요?\n(먼저 'AI로 내용 다듬기'를 누르는 것을 추천합니다!)");
-                if (!confirmProceed) return;
+                // 팝업창(confirm)을 지우고, 대신 안내 메시지만 띄운 후 바로 만들도록 수정했습니다.
+                showMessage("💡 AI로 다듬지 않은 슬라이드도 그대로 PPT에 포함됩니다.", false);
             }
 
             showLoading("멋진 파워포인트(PPT) 파일을 만들고 있습니다...");
@@ -420,14 +433,14 @@
                     background: { color: "FFFFFF" },
                     objects: [
                         { rect: { x: 0, y: 0, w: '100%', h: 0.5, fill: { color: "22C55E" } } }, // 상단 초록색 띠
-                        { text: { text: "상평초등학교 공수전분교장", options: { x: 0.5, y: 0.1, w: 3, h: 0.3, color: "FFFFFF", fontSize: 10 } } }
+                        { text: { text: "발표 자료", options: { x: 0.5, y: 0.1, w: 3, h: 0.3, color: "FFFFFF", fontSize: 10 } } }
                     ]
                 });
 
                 // 2. 제목 슬라이드 추가
                 let titleSlide = pres.addSlide({ masterName: "MASTER_SLIDE" });
                 titleSlide.addText(topic, { x: 1, y: 2, w: 8, h: 1.5, fontSize: 44, bold: true, color: "1F2937", align: "center" });
-                const userName = auth && auth.currentUser ? auth.currentUser.displayName : "공수전분교 5학년";
+                const userName = auth && auth.currentUser ? auth.currentUser.displayName : "발표자";
                 titleSlide.addText(`발표자: ${userName}`, { x: 1, y: 3.5, w: 8, h: 1, fontSize: 24, color: "4B5563", align: "center" });
 
                 // 3. 내용 슬라이드 추가
@@ -474,7 +487,6 @@
                         else if (hasImage) mediaText = "사진/그림 삽입 공간";
                         else mediaText = "표/그래프 삽입 공간";
 
-                        // 오류 방지를 위해 pres.ShapeType.rect 명시적 사용
                         slide.addShape(pres.ShapeType.rect, { x: mediaX, y: 1.8, w: mediaW, h: 3, fill: { color: "F3F4F6" }, line: { color: "D1D5DB", width: 1 } });
                         slide.addText(mediaText, { x: mediaX, y: 1.8, w: mediaW, h: 3, align: "center", color: "9CA3AF", fontSize: 16 });
                     }
@@ -490,7 +502,7 @@
 
             } catch (error) {
                 console.error(error);
-                showMessage("PPT 생성 중 오류가 발생했습니다.", true);
+                showMessage(`PPT 오류: ${error.message}`, true);
             } finally {
                 hideLoading();
             }
